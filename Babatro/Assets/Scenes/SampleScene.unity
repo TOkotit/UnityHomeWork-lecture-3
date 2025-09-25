@@ -253,7 +253,7 @@ Transform:
   m_GameObject: {fileID: 219392602}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 224, y: 0, z: 88}
+  m_LocalPosition: {x: 167, y: 0, z: 92.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -965,7 +965,6 @@ GameObject:
   - component: {fileID: 610161380}
   - component: {fileID: 610161379}
   - component: {fileID: 610161382}
-  - component: {fileID: 610161381}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -985,7 +984,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfd9a3abe2cf1b8488a5805dd724d9e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputs: {fileID: 610161381}
   dicePrefab: {fileID: 7471017549068774706, guid: f9a78b5c902aad64eb95d94a5be2f853, type: 3}
   countOfDice: 4
   start: {x: -10, y: 15, z: -20}
@@ -1026,24 +1024,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &610161381
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 610161378}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a61acf9a6c38479469ad377ac1262273, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  changeBindEvent:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &610161382
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1057,7 +1037,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Actions: {fileID: -944628639613478452, guid: 544e783d2afef044db0a6d0f835d0734, type: 3}
-  m_NotificationBehavior: 0
+  m_NotificationBehavior: 2
   m_UIInputModule: {fileID: 0}
   m_DeviceLostEvent:
     m_PersistentCalls:
@@ -1080,7 +1060,39 @@ MonoBehaviour:
   m_ControlsChangedEvent:
     m_PersistentCalls:
       m_Calls: []
-  m_ActionEvents: []
+  m_ActionEvents:
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 610161379}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: OnRoll
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 3ac2aaec-3861-47ce-abdc-36faa6dd0006
+    m_ActionName: 'PLayer/Roll[/Keyboard/space]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 610161379}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: StartRebindRoll
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 9a99f194-37cf-4009-9b24-569c77edb427
+    m_ActionName: 'PLayer/ChangeBind[/Keyboard/backquote]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: PLayer

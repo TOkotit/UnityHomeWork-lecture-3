@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using InputSystem;
 using UnityEngine.InputSystem;
 
 public class GameManager : MonoBehaviour
@@ -9,7 +8,6 @@ public class GameManager : MonoBehaviour
     #region Fields
 
     [Header("References")]
-    [SerializeField] private Inputs inputs;
     [SerializeField] private GameObject dicePrefab;
 
     [Header("Settings")]
@@ -87,19 +85,7 @@ public class GameManager : MonoBehaviour
     // MinMax методы прописаны в классе
     #endregion
     
-    #region Awake and Initsialisation
-    private void Awake()
-    {
-        if (!inputs) inputs = GetComponent<Inputs>();
-
-        inputs.changeBindEvent.AddListener(() =>
-        {
-            var playerInput = inputs.GetComponent<PlayerInput>();
-            var rollAction = playerInput.actions["Roll"];
-            StartRebindRoll(rollAction);
-        });
-        Debug.Log("GameManager Awake complete. Inputs assigned.");
-    }
+    #region Initsialisation
 
     private void Initialisation()
     {
@@ -182,8 +168,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void OnRoll()
+    public void OnRoll(InputAction.CallbackContext ctx)
     {
+        if (!ctx.started ) return;
+        
         foreach (var s in scoresList)
             s.ResetForNewRoll();
         resultsProcessed = false;
@@ -192,8 +180,15 @@ public class GameManager : MonoBehaviour
         ThrowDice();
     }
     
-    private void StartRebindRoll(InputAction rollAction)
+    
+    // Я это сделал и оно работает, остальное не волнует
+    public void StartRebindRoll(InputAction.CallbackContext ctx)
     {
+        
+        if (!ctx.performed) return;
+        
+        var rollAction = ctx.action?.actionMap?.FindAction("Roll");
+        
         rollAction.Disable();
         Debug.Log("Нажмите любую кнопку для перебинда");
         
