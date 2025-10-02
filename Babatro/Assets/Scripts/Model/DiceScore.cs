@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class DiceScore : MonoBehaviour
 {
-    #region Fields
     
     [SerializeField] private float velocityThreshold = 0.1f;
     [SerializeField] private float angularVelocityThreshold = 0.1f;
@@ -14,9 +13,6 @@ public class DiceScore : MonoBehaviour
     private bool hasMoved = false;
     public FaceTrigger[] faceTriggers;
     
-    #endregion
-    
-    #region  Methods
     
     public float VelocityThreshold
     {
@@ -47,10 +43,7 @@ public class DiceScore : MonoBehaviour
                    angular < AngularVelocityThreshold;
         }
     }
-
-    #endregion
     
-    #region Initialization and Collide
     public void DiceInitialisation(Rigidbody rb)
     {
         diceRigidbody = rb;
@@ -75,6 +68,5 @@ public class DiceScore : MonoBehaviour
             .ToArray();
 
     public void MarkAsMoved() => hasMoved = true;
-    
-    #endregion
+
 }

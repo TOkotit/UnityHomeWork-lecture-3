@@ -2,18 +2,21 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System;
+using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
 {
-    #region Fields
-
     [Header("References")]
     [SerializeField] private GameObject dicePrefab;
 
     [Header("Settings")]
-    [SerializeField] private int countOfDice = 1;
+    [SerializeField, Range(1, 10)] private int countOfDice = 1;
     [SerializeField] private Vector3 start = Vector3.zero;
     [SerializeField] private int spacing = 5;
+    
+    [Header("Physics")]
     [SerializeField] private MinMaxFloat speedRange = new(5f, 10f);
     [SerializeField] private MinMaxFloat randomOffsetX = new(-0.3f, 0.3f);
     [SerializeField] private MinMaxFloat randomOffsetY = new(0f, 0.2f);
@@ -21,27 +24,38 @@ public class GameManager : MonoBehaviour
     [SerializeField] private MinMaxFloat torqueRangeX = new(-10f, 10f);
     [SerializeField] private MinMaxFloat torqueRangeY = new(-10f, 10f);
     [SerializeField] private MinMaxFloat torqueRangeZ = new(-10f, 10f);
-
+    
+    
+    
+    private int winScore = 10;
+    private int drawScore = 5;
+    
     private readonly List<GameObject> dicesList = new();
-    private readonly List<Rigidbody> rigitbodyList = new();
+    private readonly List<Rigidbody> rigidbodyList = new();
     private readonly List<DiceScore> scoresList = new();
     
-    private bool resultsProcessed;
     
-    private static readonly Dictionary<int, int> BottomToTop = new()
+    private bool resultsProcessed;
+    private int resultCount;
+    
+    private string resultLine;
+    private string winLoseResultLine;
+
+    public event Action<string> OnResultChanged;
+    public event Action<string> OnWinLoseResultChanged;
+    
+
+    
+    public string ResultLine
     {
-        {1, 6},
-        {2, 5},
-        {3, 4},
-        {4, 3},
-        {5, 2},
-        {6, 1}
-    };
-
-    #endregion
-
-    #region Methods
-
+        get => resultLine;
+        private set
+        {
+            resultLine = value;
+            OnResultChanged?.Invoke(resultLine);
+        }
+    }
+    
     public GameObject DicePrefab
     {
         get => dicePrefab;
@@ -81,14 +95,35 @@ public class GameManager : MonoBehaviour
         get => spacing;
         set => spacing = value;
     }
+
+    public int WinScore
+    {
+        get => winScore;
+        set => winScore = value;
+    }
+
+    public int DrawScore
+    {
+        get => drawScore;
+        set => drawScore = value;
+    }
     
     // MinMax методы прописаны в классе
-    #endregion
     
-    #region Initsialisation
-
     private void Initialisation()
     {
+        if (CountOfDice < dicesList.Count)
+        {
+            for (var i = dicesList.Count - 1; i >= CountOfDice; i--)
+            {
+                Destroy(dicesList[i]);        
+                dicesList.RemoveAt(i);
+                rigidbodyList.RemoveAt(i);
+                scoresList.RemoveAt(i);
+            }
+        }
+        
+        
         for (var i = 0; i < CountOfDice; i++)
         {
             var pos = new Vector3(Start.x + i * Spacing, Start.y, Start.z);
@@ -99,7 +134,7 @@ public class GameManager : MonoBehaviour
             if (i < dicesList.Count)
             {
                 dice = dicesList[i];
-                diceRigidbody = rigitbodyList[i];
+                diceRigidbody = rigidbodyList[i];
                 diceScore = scoresList[i];
 
                 dice.transform.position = pos;
@@ -114,7 +149,7 @@ public class GameManager : MonoBehaviour
                 dicesList.Add(dice);
 
                 diceRigidbody = dice.GetComponent<Rigidbody>();
-                rigitbodyList.Add(diceRigidbody);
+                rigidbodyList.Add(diceRigidbody);
 
                 diceScore = dice.GetComponent<DiceScore>();
                 diceScore.DiceInitialisation(diceRigidbody);
@@ -122,32 +157,45 @@ public class GameManager : MonoBehaviour
             }
         }
     }
-    
-    #endregion
-
-    #region  Update
 
     private void Update()
     {
-        
         if (resultsProcessed) return;
         if (!scoresList.All(ds => ds.IsStopped)) return;
-
-        var total = 0;
-        foreach (var dice in scoresList)
-            total +=  BottomToTop[dice.GetTouchedFaces().FirstOrDefault() + 1];
         
-        Debug.Log($"Результаты кубиков Сумма: {total}");
+        CalculateResults();
 
-        resultsProcessed = true;
     }
 
-    #endregion
-
-    #region Events
-    private void ThrowDice()
+    private void CalculateResults()
     {
-        foreach (var (rig, score) in rigitbodyList.Zip(scoresList, (r, s) => (r, s)))
+        resultCount = scoresList.Select(dice => 7 - (dice.GetTouchedFaces().FirstOrDefault() + 1)).Sum();
+        
+        ResultLine = $"Сумма: {resultCount}";
+
+        if (resultCount >= winScore)
+            OnWinLoseResultChanged?.Invoke("Победа!");
+        else if (resultCount >= drawScore)
+            OnWinLoseResultChanged?.Invoke("Ничья");
+        else
+            OnWinLoseResultChanged?.Invoke("Поражение!");
+    }
+
+    public void OnRoll(InputAction.CallbackContext ctx)
+    {
+        if (!ctx.started ) return;
+        ThrowDice();
+    }
+    
+    public void ThrowDice()
+    {
+    
+        foreach (var s in scoresList)
+            s.ResetForNewRoll();
+        resultsProcessed = false;
+        Initialisation();
+    
+        foreach (var (rig, score) in rigidbodyList.Zip(scoresList, (r, s) => (r, s)))
         {
             var forceDir = (Vector3.forward + new Vector3(
                 Random.Range(randomOffsetX.Min, randomOffsetX.Max),
@@ -167,19 +215,6 @@ public class GameManager : MonoBehaviour
             score.MarkAsMoved();
         }
     }
-
-    public void OnRoll(InputAction.CallbackContext ctx)
-    {
-        if (!ctx.started ) return;
-        
-        foreach (var s in scoresList)
-            s.ResetForNewRoll();
-        resultsProcessed = false;
-        Debug.Log("Бросаем кубики!");
-        Initialisation();
-        ThrowDice();
-    }
-    
     
     // Я это сделал и оно работает, остальное не волнует
     public void StartRebindRoll(InputAction.CallbackContext ctx)
@@ -188,20 +223,18 @@ public class GameManager : MonoBehaviour
         if (!ctx.performed) return;
         
         var rollAction = ctx.action?.actionMap?.FindAction("Roll");
-        
+
+        if (rollAction == null) return;
         rollAction.Disable();
         Debug.Log("Нажмите любую кнопку для перебинда");
-        
+
         rollAction.PerformInteractiveRebinding()
             .WithControlsExcluding("<Keyboard>/tilde")
             .OnComplete(callback =>
             {
                 rollAction.Enable();
                 callback.Dispose();
-                Debug.Log("Roll успешно перебинжен!");
             })
             .Start();
     }
-    
-    #endregion
 }
