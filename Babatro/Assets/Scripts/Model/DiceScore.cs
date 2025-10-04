@@ -10,8 +10,12 @@ public class DiceScore : MonoBehaviour
 
     private Rigidbody diceRigidbody;
     private bool isTouchingTable;
-    private bool hasMoved = false;
+    private bool hasMoved;
     public FaceTrigger[] faceTriggers;
+    
+    
+    private bool hasStoppedEventSent;
+    public event System.Action<DiceScore> OnStopped;    
     
     
     public float VelocityThreshold
@@ -38,11 +42,21 @@ public class DiceScore : MonoBehaviour
             if (linear > VelocityThreshold || angular > AngularVelocityThreshold)
                 hasMoved = true;
 
-            return isTouchingTable && hasMoved && 
-                   linear < VelocityThreshold && 
-                   angular < AngularVelocityThreshold;
+            var stopped = isTouchingTable && hasMoved &&
+                          linear < VelocityThreshold &&
+                          angular < AngularVelocityThreshold;
+
+            if (!stopped || hasStoppedEventSent) return stopped;
+            
+            hasStoppedEventSent = true;
+            OnStopped?.Invoke(this);
+
+            return true;
         }
     }
+
+    
+    
     
     public void DiceInitialisation(Rigidbody rb)
     {
@@ -60,6 +74,7 @@ public class DiceScore : MonoBehaviour
     {
         hasMoved = false;
         isTouchingTable = false;
+        hasStoppedEventSent = false;
     }
     public int[] GetTouchedFaces()
         => faceTriggers

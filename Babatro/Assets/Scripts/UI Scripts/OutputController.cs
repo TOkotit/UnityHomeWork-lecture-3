@@ -1,5 +1,7 @@
+using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 
@@ -7,61 +9,25 @@ namespace UI_Scripts
 {
     public class OutputController : MonoBehaviour
     {
-        [SerializeField] private TMP_Text resultText;
-        [SerializeField] private TMP_Text winLoseText;
+        [SerializeField] private TMP_Text countResultTMP;
+        [SerializeField] private TMP_Text gameResultTMP;
         [SerializeField] private Image resultImage;
         
         [SerializeField] private Sprite winSprite;
         [SerializeField] private Sprite drawSprite;
         [SerializeField] private Sprite loseSprite;
+        
+        [SerializeField] private string winText;
+        [SerializeField] private string loseText;
+        [SerializeField] private string drawText;
+        
     
         [SerializeField] private GameManager gameManager;
-        
-        public TMP_Text ResultText
-        {
-            get => resultText;
-            set
-            {
-                if (value is null)
-                {
-                    Debug.Log("ResultText can't be null");
-                    return;
-                }
-                resultText = value;
-            }
-        }
-    
-        public TMP_Text WinLoseText
-        {
-            get => winLoseText;
-            set
-            {
-                if (value is null)
-                {
-                    Debug.Log("WinLoseText can't be null");
-                    return;
-                }
-                winLoseText = value;
-            }
-        }
-    
-        public GameManager GameManager
-        {
-            get => gameManager;
-            set
-            {
-                if (value is null)
-                {
-                    Debug.Log("GameManager can't be null");
-                    return;
-                }
-                gameManager = value;
-            }
-        }
+
         
         private void Awake()
         {
-            if (!ResultText || !WinLoseText || !GameManager
+            if (!countResultTMP || !gameResultTMP || !gameManager
                 || !winSprite || !drawSprite || !loseSprite)
             {
                 Debug.LogError($"{nameof(OutputController)}: Не все ссылки назначены в инспекторе!");
@@ -71,19 +37,30 @@ namespace UI_Scripts
             if (drawSprite)
                 resultImage.sprite = drawSprite;
             
-            GameManager.OnResultChanged += result => ResultText.text = result;
-            GameManager.OnWinLoseResultChanged += (text) =>
-            {
-                WinLoseText.text = text;
-                resultImage.sprite = text switch
-                {
-                    "Победа!" => winSprite,
-                    "Ничья" => drawSprite,
-                    "Поражение!" => loseSprite,
-                    _ => resultImage.sprite
-                };
-            };
+            GameManager.OnResultChanged += resultText => countResultTMP.text = resultText;
+            GameManager.OnWinLoseResultChanged += UpdateUI;
 
+        }
+        
+        private void UpdateUI(ResultOfTheGame result)
+        {
+            switch (result)
+            {
+                case ResultOfTheGame.Win:
+                    gameResultTMP.text = winText;
+                    resultImage.sprite = winSprite;
+                    break;
+                case ResultOfTheGame.Draw:
+                    gameResultTMP.text = drawText;
+                    resultImage.sprite = drawSprite;
+                    break;
+                case ResultOfTheGame.Lose:
+                    gameResultTMP.text = loseText;
+                    resultImage.sprite = loseSprite;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(result), result, null);
+            }
         }
 
     }

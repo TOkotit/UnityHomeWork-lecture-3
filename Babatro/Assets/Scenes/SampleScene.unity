@@ -1883,6 +1883,8 @@ MonoBehaviour:
   torqueRangeZ:
     _min: -10
     _max: 10
+  winScore: 10
+  drawScore: 5
 --- !u!4 &610161380
 Transform:
   m_ObjectHideFlags: 0
@@ -2638,12 +2640,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 539e25ad935487d4082522fcb688815a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resultText: {fileID: 1915795489}
-  winLoseText: {fileID: 473564521}
+  countResultTMP: {fileID: 1915795489}
+  gameResultTMP: {fileID: 473564521}
   resultImage: {fileID: 1902001784}
   winSprite: {fileID: 21300000, guid: c7bdd2099c376f242b9581342c254d6d, type: 3}
   drawSprite: {fileID: 21300000, guid: 07fa311943afde54daeea97c192c0215, type: 3}
   loseSprite: {fileID: 21300000, guid: 58cad67ed1fd57a43a57d335dd7e4acf, type: 3}
+  winText: "\u041F\u043E\u0431\u0435\u0434\u0430!"
+  loseText: "\u041F\u043E\u0440\u0430\u0436\u0435\u043D\u0438\u0435!"
+  drawText: "\u041D\u0438\u0447\u044C\u044F!"
   gameManager: {fileID: 610161379}
 --- !u!1 &1123132688
 GameObject:

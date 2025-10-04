@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System;
-using UnityEngine.Serialization;
+using System.Collections;
 using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
@@ -25,24 +25,22 @@ public class GameManager : MonoBehaviour
     [SerializeField] private MinMaxFloat torqueRangeY = new(-10f, 10f);
     [SerializeField] private MinMaxFloat torqueRangeZ = new(-10f, 10f);
     
-    
-    
-    private int winScore = 10;
-    private int drawScore = 5;
-    
+    [SerializeField] private int winScore = 10;
+    [SerializeField] private int drawScore = 5;
+
+
     private readonly List<GameObject> dicesList = new();
     private readonly List<Rigidbody> rigidbodyList = new();
     private readonly List<DiceScore> scoresList = new();
     
-    
     private bool resultsProcessed;
     private int resultCount;
-    
+    private int stoppedCount;
     private string resultLine;
     private string winLoseResultLine;
 
-    public event Action<string> OnResultChanged;
-    public event Action<string> OnWinLoseResultChanged;
+    public static event Action<string> OnResultChanged;
+    public static event Action<ResultOfTheGame> OnWinLoseResultChanged;
     
 
     
@@ -96,26 +94,51 @@ public class GameManager : MonoBehaviour
         set => spacing = value;
     }
 
+    public static ResultOfTheGame ResultOfTheGame
+    { 
+        set => OnWinLoseResultChanged?.Invoke(value);
+    }
+    
     public int WinScore
     {
         get => winScore;
-        set => winScore = value;
+        set
+        {
+            if (value < 0)
+            {
+                Debug.LogWarning("WinScore cannot be negative");
+                return;
+            }
+            winScore = value;
+            ReevaluateLastResult();
+        }
     }
+    
 
     public int DrawScore
     {
         get => drawScore;
-        set => drawScore = value;
+        set
+        {
+            if (value < 0)
+            {
+                Debug.LogWarning("DrawScore cannot be negative");
+                return;
+            }
+            drawScore = value;
+            ReevaluateLastResult();
+        }
     }
-    
+
     // MinMax методы прописаны в классе
     
-    private void Initialisation()
+    private void Initialize()
     {
         if (CountOfDice < dicesList.Count)
         {
             for (var i = dicesList.Count - 1; i >= CountOfDice; i--)
             {
+                scoresList[i].OnStopped -= HandleDiceStopped;
                 Destroy(dicesList[i]);        
                 dicesList.RemoveAt(i);
                 rigidbodyList.RemoveAt(i);
@@ -142,6 +165,7 @@ public class GameManager : MonoBehaviour
                 diceRigidbody.linearVelocity = Vector3.zero;
                 diceRigidbody.angularVelocity = Vector3.zero;
                 diceScore.DiceInitialisation(diceRigidbody);
+                diceScore.OnStopped += HandleDiceStopped;
             }
             else
             {
@@ -153,19 +177,42 @@ public class GameManager : MonoBehaviour
 
                 diceScore = dice.GetComponent<DiceScore>();
                 diceScore.DiceInitialisation(diceRigidbody);
+                diceScore.OnStopped += HandleDiceStopped;
                 scoresList.Add(diceScore);
             }
         }
     }
-
-    private void Update()
+    
+    private void ReevaluateLastResult()
     {
-        if (resultsProcessed) return;
-        if (!scoresList.All(ds => ds.IsStopped)) return;
+        if (!resultsProcessed) return;
         
-        CalculateResults();
-
+        if (resultCount >= WinScore)
+            ResultOfTheGame = ResultOfTheGame.Win;
+        else if (resultCount >= DrawScore)
+            ResultOfTheGame = ResultOfTheGame.Draw;
+        else
+            ResultOfTheGame = ResultOfTheGame.Lose;
     }
+    
+    private void HandleDiceStopped(DiceScore dice)
+    {
+        stoppedCount++;
+        if (stoppedCount != scoresList.Count) return;
+        CalculateResults();
+        resultsProcessed = true;
+        stoppedCount = 0;
+    }
+    
+    private IEnumerator WaitForAllStopped()
+    {
+        while (!scoresList.All(ds => ds.IsStopped))
+            yield return new WaitForSeconds(0.05f);
+
+        CalculateResults();
+        resultsProcessed = true;
+    }
+    
 
     private void CalculateResults()
     {
@@ -173,12 +220,12 @@ public class GameManager : MonoBehaviour
         
         ResultLine = $"Сумма: {resultCount}";
 
-        if (resultCount >= winScore)
-            OnWinLoseResultChanged?.Invoke("Победа!");
-        else if (resultCount >= drawScore)
-            OnWinLoseResultChanged?.Invoke("Ничья");
+        if (resultCount >= WinScore)
+            ResultOfTheGame =  ResultOfTheGame.Win;
+        else if (resultCount >= DrawScore)
+            ResultOfTheGame = ResultOfTheGame.Draw;
         else
-            OnWinLoseResultChanged?.Invoke("Поражение!");
+            ResultOfTheGame = ResultOfTheGame.Lose;
     }
 
     public void OnRoll(InputAction.CallbackContext ctx)
@@ -193,7 +240,7 @@ public class GameManager : MonoBehaviour
         foreach (var s in scoresList)
             s.ResetForNewRoll();
         resultsProcessed = false;
-        Initialisation();
+        Initialize();
     
         foreach (var (rig, score) in rigidbodyList.Zip(scoresList, (r, s) => (r, s)))
         {
@@ -214,6 +261,8 @@ public class GameManager : MonoBehaviour
 
             score.MarkAsMoved();
         }
+        
+        StartCoroutine(WaitForAllStopped());
     }
     
     // Я это сделал и оно работает, остальное не волнует
